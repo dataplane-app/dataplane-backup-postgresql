@@ -30,7 +30,11 @@ func RunPostgresBackup(c *fiber.Ctx) error {
 	ctx := c.Context()
 
 	// Run the back up command::
-	dumpFilename := fmt.Sprintf("/app/backup/%v-db-timescaledb-2.5.1-pg14.sql", time.Now().Unix())
+
+	log.Println("Backup database")
+	timenow := time.Now().UTC()
+	file := fmt.Sprintf("%s-db-timescaledb-2.5.1-pg14.sql", timenow.Format("2006-01-02-15-04-05"))
+	dumpFilename := "/app/backup/" + file
 	dbConfig := config.GConf.PostgresDatabase
 
 	command := fmt.Sprintf(
@@ -46,6 +50,7 @@ func RunPostgresBackup(c *fiber.Ctx) error {
 	cmd.Stderr = &errb
 	err = cmd.Run()
 	if err != nil {
+		log.Println("Err:", err)
 		// cleanup files if something goes wrong
 		os.Remove(dumpFilename)
 		fmt.Println(outb.String())
@@ -54,6 +59,7 @@ func RunPostgresBackup(c *fiber.Ctx) error {
 	}
 
 	// Compress the file
+	log.Println("Compress the file")
 	filename := fmt.Sprintf("%s.tar.gz", dumpFilename)
 
 	cmdn := exec.CommandContext(ctx, "tar", "-czf", filename, dumpFilename)
@@ -61,6 +67,7 @@ func RunPostgresBackup(c *fiber.Ctx) error {
 	cmdn.Stderr = &errb
 	err = cmdn.Run()
 	if err != nil {
+		log.Println("Err:", err)
 		// cleanup files if something goes wrong
 		os.Remove(filename)
 		fmt.Println(outb.String())
@@ -68,25 +75,27 @@ func RunPostgresBackup(c *fiber.Ctx) error {
 		return err
 	}
 
+	log.Println("Upload to S3", config.GConf.S3.Bucket, filename)
 	info, err := s3.Client.FPutObject(
 		ctx,
 		config.GConf.S3.Bucket,
-		fmt.Sprintf("backup/database/%s", filename),
+		fmt.Sprintf("backup/database/%s", file),
 		filename,
 		minio.PutObjectOptions{
 			ContentType: "application/x-tar",
 		},
 	)
 	if err != nil {
+		log.Println("Err:", err)
 		return err
 	}
+
+	// --- send response
+	log.Println("postgres backup complete", "size:", info.Size)
 
 	// Clean up
 	os.Remove(dumpFilename)
 	os.Remove(filename)
-
-	// --- send response
-	log.Println("postgres backup complete", "size:", info.Size)
 
 	b, _ := json.Marshal(info)
 

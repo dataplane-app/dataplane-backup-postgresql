@@ -16,6 +16,7 @@ type S3 struct {
 	Bucket    string `validate:"nonnil"`
 	Region    string `validate:"nonnil"`
 	Url       string
+	SSL       string
 }
 
 // Config is configuraton for service
@@ -54,6 +55,7 @@ func GetConfig() Config {
 	s3Config.Bucket = os.Getenv("S3_BUCKET")
 	s3Config.Region = os.Getenv("S3_REGION")
 	s3Config.Url = os.Getenv("S3_URL")
+	s3Config.SSL = os.Getenv("S3_SSL")
 
 	config := Config{
 		PostgresDatabase: postgresDbConfig,

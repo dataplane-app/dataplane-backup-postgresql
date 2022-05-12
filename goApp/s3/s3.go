@@ -2,17 +2,25 @@ package s3
 
 import (
 	"dataplane-backup/config"
+	"log"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-var Client *minio.Client = SetupInstance()
+var Client *minio.Client
 
-func SetupInstance() *minio.Client {
-	sess, _ := minio.New(config.GConf.S3.Url, &minio.Options{
-		Region: config.GConf.S3.Region,
+func SetupInstance() {
+	sess, err := minio.New(config.GConf.S3.Url, &minio.Options{
 		Creds:  credentials.NewStaticV4(config.GConf.S3.AccessKey, config.GConf.S3.SecureKey, ""),
+		Secure: true,
 	})
-	return sess
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	// log.Printf("%#v\n", sess)
+
+	Client = sess
 }

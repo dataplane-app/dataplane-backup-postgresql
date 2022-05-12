@@ -2,6 +2,7 @@ package main
 
 import (
 	"dataplane-backup/routes"
+	"dataplane-backup/s3"
 	"fmt"
 	"log"
 	"time"
@@ -12,6 +13,9 @@ import (
 )
 
 func main() {
+
+	// Connect to S3 client
+	s3.SetupInstance()
 
 	app := fiber.New()
 

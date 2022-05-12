@@ -30,7 +30,7 @@ func RunPostgresBackup(c *fiber.Ctx) error {
 	ctx := c.Context()
 
 	// Run the back up command::
-	dumpFilename := fmt.Sprintf("%v-db-timescaledb-2.5.1-pg14.sql", time.Now().Unix())
+	dumpFilename := fmt.Sprintf("/app/backup/%v-db-timescaledb-2.5.1-pg14.sql", time.Now().Unix())
 	dbConfig := config.GConf.PostgresDatabase
 
 	command := fmt.Sprintf(

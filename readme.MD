@@ -1,11 +1,15 @@
 ### APIs -
-`POST` to `/postgres` starts a Postgres Database Backup to S3.
+`POST` to `/postgres-backup` starts a Postgres Database Backup to S3.
 
 
 ### Start the server
 ```shell
 go run server.go
 ```
+
+### Folders
+* /app - application
+* /app/backup - backup files
 
 ### Environment variables
 
@@ -26,5 +30,11 @@ S3 API
 
 ### Build docker images
 ```shell
+export dpversion=0.0.x
 
+docker build -t dataplane/dataplane-backup-postgresql-s3:$dpversion -f Dockerfile.alpine .
+docker tag dataplane/dataplane-backup-postgresql-s3:$dpversion dataplane/dataplane-backup-postgresql-s3:$dpversion
+docker push dataplane/dataplane-backup-postgresql-s3:$dpversion
+docker tag dataplane/dataplane-backup-postgresql-s3:$dpversion dataplane/dataplane-backup-postgresql-s3:latest
+docker push dataplane/dataplane-backup-postgresql-s3:latest
 ```

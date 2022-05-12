@@ -1,0 +1,50 @@
+FROM golang:1.16-alpine as builder
+
+# https://github.com/chemidy/smallest-secured-golang-docker-image/blob/master/Dockerfile
+RUN apk update && apk add --no-cache git ca-certificates tzdata && update-ca-certificates
+
+# Create appuser
+ENV USER=appuser
+ENV UID=10001
+ARG GITHUB_USER
+ARG GITHUB_TOKEN
+
+# See https://stackoverflow.com/a/55757473/12429735
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/app" \
+    --shell "/sbin/nologin" \
+#    --no-create-home \
+    --uid "${UID}" \
+    "${USER}"
+
+RUN mkdir -p /go/src/build
+
+WORKDIR /go/src/build
+
+COPY goApp/go.mod .
+COPY goApp/go.sum .
+RUN go mod download
+
+ADD goApp /go/src/build/
+
+RUN CGO_ENABLED=0 go build -o main server.go
+
+FROM alpine:3.12
+
+# RUN apk add --no-cache mysql-client
+RUN apk add --no-cache postgresql-client
+
+# Import from builder.
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /etc/passwd /etc/passwd
+COPY --from=builder /etc/group /etc/group
+
+COPY --from=builder go/src/build/main /app/
+WORKDIR /app
+# Use an unprivileged user.
+# USER appuser:appuser
+EXPOSE 8099
+CMD ["./main"]
